@@ -46,19 +46,28 @@ class UserController extends Controller
 ```
 The above is a conventional controller, and you must add #[annotate('true')] to the declaration class, so that annotations will be generated.
 Global attributes can be declared on the annotation of the class, such as:
-`
-#[annotate('true'),prefix('/user')]`
+
+`#[annotate('true'),prefix('/user')]`
+
 In this way, the following method comments will be automatically prefixed. Of course, you can also change this prefix on the method.
 
 The attribute of annotation method is basically the same as that of routing.
 For example:
+
 `#[get('show'),prefix('/user'),middleware('myauth')]`
+
 The above declared annotation will eventually generate the following route:
+
 `Route::prefix("/user")->post("all",[userController::class,"show"])->middleware("myauth"); `
+
 In addition, where regular validation is also supported:
+
 `#[get('show/{name}'),where(['name'=>'[a-z]+'])]`
+
 Or this again:
+
 `#[get('show/{name}'),where('name','[a-z]+')]`
+
 In addition, you can declare the global where attribute on the class annotation:
 `
 #[annotate('true'),prefix('/user'),where(['name'=>'[a-z]+'])]`
@@ -80,7 +89,9 @@ class MyController extends Controller
 }
 ```
 The attribute names of class annotations and method annotations are as follows:
+
 All comments of the class will be automatically registered in the method comments, and can also be covered in the method comments.
+
 | Annotation class attribute (global attribute) | Method attribute |
 | --- | --- |
 | prefix,name,where,domain,middleware | prefix,name,where,domain,middleware，post,get,any,match,options,patch,view,redirect,put,delete |
