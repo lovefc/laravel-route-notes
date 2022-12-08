@@ -2,7 +2,7 @@
 /*
  * @Author       : lovefc
  * @Date         : 2022-12-06 15:16:15
- * @LastEditTime : 2022-12-07 19:24:21
+ * @LastEditTime : 2022-12-08 20:59:21
  */
 
 namespace lovefc\LaravelRouteNotes;
@@ -13,6 +13,8 @@ class RouteNotes
 
 	protected static $useClass = [];
 
+	protected static $groups = [];
+
 	protected static $attrs = [
 		'prefix',
 		'name',
@@ -20,6 +22,7 @@ class RouteNotes
 		'domain',
 		'middleware',
 		'redirect',
+		'group'
 	];
 
 	protected static $verbAttrs = [
@@ -85,6 +88,7 @@ class RouteNotes
 			$attr = RouteNotes::getAttr($v);
 			self::creRoute($attr);
 		}
+		self::creGroupRoute();
 		return $code = self::joinCode();
 	}
 
@@ -139,14 +143,54 @@ class RouteNotes
 				$_arr = self::verbParameter($_attrs, $method, $class);
 				$arr[] = array_merge($public_arr, $_arr);
 			}
+			foreach ($arr as $k => $verb) {
+				self::group($verb);
+			}
 			$str = '';
 			foreach ($arr as $k => $verb) {
-				$str2 = implode("->", $verb);
-				$str .= "\r\nRoute::{$str2};\r\n";
+				if (!array_key_exists('group', $verb)) {
+					$str2 = implode("->", $verb);
+					$str .= "\r\nRoute::{$str2};\r\n";
+				}
 			}
 			self::$generateStr .= $str;
 		}
 	}
+
+	/**
+	 * 分组处理
+	 */
+	protected static function group($verb)
+	{
+		foreach ($verb as $k => $v) {
+			if ($k === 'group') {
+				unset($verb['group']);
+				self::$groups[$v][] = $verb;
+			}
+		}
+	}
+
+	/**
+	 * 生成分组路由
+	 */
+	protected static function creGroupRoute()
+	{
+		if (count(self::$groups) > 0) {
+			$group_str = "";
+			foreach (self::$groups as $k => $arr) {
+				$group = $k;
+				$str = '';
+				foreach ($arr as $verb) {
+					$str2 = implode("->", $verb);
+					$str .= "\r\n    Route::{$str2};\r\n";
+				}
+				$group = "\r\nRoute::" . rtrim($group, ")") . ",function(){\r\n";
+				$group_str .= "{$group}{$str}\r\n});\r\n";
+			}
+		}
+		self::$generateStr .= $group_str;
+	}
+
 	/**
 	 * 生成参数
 	 */
@@ -154,25 +198,33 @@ class RouteNotes
 	{
 		$str_arr = [];
 		foreach ($attrs as $k => $v) {
-			if(is_array($v)){
-				(count($v)==1) && $v = $v[0];
+			if (is_array($v)) {
+				(count($v) == 1) && $v = $v[0];
 			}
 			if (in_array($k, self::$verbAttrs) && !empty($method) &&  !empty($class)) {
 				$str_arr[$k] = "{$k}(\"{$v}\",[{$class}::class,\"{$method}\"])";
 			}
 			if (in_array($k, self::$attrs)) {
-				if(!is_array($v)){
-				   $str_arr[$k] = "{$k}(\"{$v}\")";
-				}else{
-				   $str = "{$k}(";
-				   foreach($v as $k2=>$v2){
-					   if(!is_numeric($k2)){
-					       $str .=  "['{$k2}'=>'{$v2}']";
-					   }else{
-					       $str .= "'{$v2}',";
-					   }
-				   }
-				   $str_arr[$k] = rtrim($str, ",").")";
+				if (!is_array($v)) {
+					$str_arr[$k] = "{$k}(\"{$v}\")";
+				} else {
+					$str = '';
+					foreach ($v as $k2 => $v2) {
+						if (!is_numeric($k2)) {
+							if (!is_array($v2)) {
+								$str .=  "'{$k2}'=>'{$v2}',";
+							} else {
+								$str .= "'{$k2}'=>['" . implode("','", $v2) . "']";
+							}
+						} else {
+							$str .= "'{$v2}',";
+						}
+					}
+					$str = rtrim($str, ",");
+					if (strpos($str, '=>')) {
+						$str = "[{$str}]";
+					}
+					$str_arr[$k] = "{$k}({$str})";
 				}
 			}
 		}
