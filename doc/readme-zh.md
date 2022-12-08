@@ -86,13 +86,112 @@ class MyController extends Controller
 	}
 }
 ```
+
+### 分组注解
+
+laravel-route-notes扩展新增了分组路由支持，先看下面两个控制器
+
+```
+
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+#[annotate('true'),group(['prefix' => '/home','middleware'=>'auth'])]
+class MyController extends Controller
+{
+    #[get('/show')]
+    public function show()
+    {
+        echo 'show';
+    }
+	
+    #[get('/show2')]
+    public function show2()
+    {
+        echo 'show2';
+    }	
+}
+```
+
+MyController控制器的类注解上加上了一个`group(['prefix' => '/home','middleware'=>'auth'])`
+
+```
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+#[annotate('true')]
+class My2Controller extends Controller
+{
+    #[get('/')]
+    public function show()
+    {
+        return view('welcome');
+    }
+	
+    #[get('/login'),name('login')]
+    public function login()
+    {
+        return view('welcome');
+    }	
+	
+    #[get('/show3'),group(['prefix' => '/home','middleware'=>'auth'])]
+    public function show2()
+    {
+        echo 'show3';
+    }	
+}
+```
+
+My2Controller控制器的方法show2上的注解上，同样也有个`group(['prefix' => '/home','middleware'=>'auth'])`
+
+那么我们看一下最后生成的路由是什么样子的:
+
+```
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\My2Controller;
+use App\Http\Controllers\MyController;
+
+Route::get("/",[My2Controller::class,"show"]);
+
+Route::get("/login",[My2Controller::class,"login"])->name("login");
+
+Route::group(['prefix'=>'/home','middleware'=>'auth'],function(){
+
+    Route::get("/show3",[My2Controller::class,"show2"]);
+
+    Route::get("/show",[MyController::class,"show"]);
+
+    Route::get("/show2",[MyController::class,"show2"]);
+
+});
+
+```
+大家可以看到，对于相同命名的路由都会归类到一起。
+
+关于路由分组，其实限制又有不少，因为如果命名了group(['属性'=>'属性值']),那么最好不要再去单独声明相同的属性了。
+
+另外，如果你类注解声明了`group(['prefix' => '/home']`,那么方法注解里，在声明`prefix('/home2')`,将不会起作用，相同的属性，在分组里面声明并不会生效。
+
+### 类注解属性
+
 关于类注解和方法注解的属性名称如以下所示：
 
 类注解的都是会自动注册到方法注解里面，也可以在方法注解里面覆盖
 
 |   注解类属性(全局属性)  |  方法属性   |
 | --- | --- |
-|  prefix,name,where,domain,middleware   |  prefix,name,where,domain,middleware，post,get,any,match,options,patch,view,redirect,put,delete    |
+|  prefix,name,where,domain,middleware,group   |  prefix,name,where,domain,middleware,group,post,get,any,match,options,patch,view,redirect,put,delete    |
+
+
+>属性都要小写,并没有去判断大小写混用
 
 ## LICENSE
 
