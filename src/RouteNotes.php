@@ -175,8 +175,8 @@ class RouteNotes
 	 */
 	protected static function creGroupRoute()
 	{
+		$group_str = '';
 		if (count(self::$groups) > 0) {
-			$group_str = "";
 			foreach (self::$groups as $k => $arr) {
 				$group = $k;
 				$str = '';
