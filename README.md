@@ -1,32 +1,32 @@
 # laravel-route-notes
-Laravel framework extension, native annotation generates route
-The advantage is that the routing file is directly generated, the routing is not analyzed in operation, and the efficiency is improved.
+laravel框架扩展，原生注解生成路由
+优点是直接生成路由文件，不在运行中解析路由，提升效率
 
+中文介绍 | [English](https://github.com/lovefc/laravel-route-notes/blob/master/doc/readme-en.md)
 
-English | [中文介绍](https://github.com/lovefc/laravel-route-notes/blob/master/doc/readme-zh.md)
-
-## Use environment
+## 使用环境
 * [PHP](https://php.net/) >= 8.0
+
 * [Laravel](https://laravel.com/) >= 9.0
 
-## How to install it
-Use composer to install directly:
+## 如何安装
+直接使用composer进行安装:
 ```bash
-composer require --dev lovefc/laravel-route-notes
+composer require lovefc/laravel-route-notes:1.0.3
 ```
-## Command using
+## 命令使用
 ```
 php artisan notes:route [-p dirname] [-f filename]
 ```
-**\-p** The directory name of the controller to be generated, the default is `app/http/controllers/`.
+**\-p** 要生成的控制器目录名称,默认为`app/Http/Controllers/`
 
-**\-f** The address of the generated routing file, which defaults to ` route/date ("y-m-d-his") .php`.
+**\-f** 生成的路由文件地址,默认为`route/date("Y-m-d-His").php`
 
 
-> If you don't specify a controller directory, all controller files under app/Http/Controllers/ will be scanned for generation by default.
+>如果不指定控制器目录，默认会扫描app/Http/Controllers/下的所有控制器文件进行生成
 
-## Annotation use
-First, the annotation function should be marked on in the controller class, so that running the command will generate the route.
+## 注解使用
+首先要先在控制器类中标记开启注释功能,这样运行命令才会生成路由
 ```
 <?php
 namespace App\Http\Controllers;
@@ -44,35 +44,36 @@ class UserController extends Controller
     }
 }
 ```
-The above is a conventional controller, and you must add #[annotate('true')] to the declaration class, so that annotations will be generated.
-Global attributes can be declared on the annotation of the class, such as:
+上面是一个常规的控制器,必须在声明类的上面加上#[annotate('true')],这样才会生成注解。
+可以在类的注解上声明全局的属性,比如:
 
 `#[annotate('true'),prefix('/user')]`
 
-In this way, the following method comments will be automatically prefixed. Of course, you can also change this prefix on the method.
+这样下面方法注解就会自动带上前缀,当然你也可以在方法上改变这个前缀。
 
-The attribute of annotation method is basically the same as that of routing.
-For example:
+注解方法的属性跟路由使用基本上一样。
+
+比如:
 
 `#[get('show'),prefix('/user'),middleware('myauth')]`
 
-The above declared annotation will eventually generate the following route:
+上面声明的注解最终会生成以下的路由:
 
-`Route::prefix("/user")->post("all",[userController::class,"show"])->middleware("myauth"); `
+`Route::prefix("/user")->post("all",[userController::class,"show"])->middleware("myauth");`
 
-In addition, where regular validation is also supported:
+除此之外，也支持where正则验证:
 
 `#[get('show/{name}'),where(['name'=>'[a-z]+'])]`
 
-Or this again:
+又或者这样:
 
 `#[get('show/{name}'),where('name','[a-z]+')]`
 
-In addition, you can declare the global where attribute on the class annotation:
+另外你可以在类注解上面声明全局的where属性:
 `
 #[annotate('true'),prefix('/user'),where(['name'=>'[a-z]+'])]`
 
-Redirect annotation case:
+重定向路由注解案例:
 ```
 #[annotate('true')]
 class MyController extends Controller
@@ -89,13 +90,12 @@ class MyController extends Controller
 }
 ```
 
-### Grouping comments
+### 分组注解
 
-Laravel-route-notes extension adds group routing support. 
-
-Let's first look at the following two controllers.
+laravel-route-notes扩展新增了分组路由支持，先看下面两个控制器
 
 ```
+
 <?php
 
 namespace App\Http\Controllers;
@@ -117,10 +117,9 @@ class MyController extends Controller
         echo 'show2';
     }	
 }
-
 ```
 
-`group(['prefix' => '/home','middleware'=>'auth'])` is added to the class annotation of MyController.
+MyController控制器的类注解上加上了一个`group(['prefix' => '/home','middleware'=>'auth'])`
 
 ```
 <?php
@@ -152,9 +151,9 @@ class My2Controller extends Controller
 }
 ```
 
-There is also a `group(['prefix' => '/home','middleware'=>'auth'])` on the annotation of the method show2 of My2Controller.
+My2Controller控制器的方法show2上的注解上，同样也有个`group(['prefix' => '/home','middleware'=>'auth'])`
 
-So let's take a look at what the finally generated route looks like:
+那么我们看一下最后生成的路由是什么样子的:
 
 ```
 <?php
@@ -178,23 +177,25 @@ Route::group(['prefix'=>'/home','middleware'=>'auth'],function(){
 });
 
 ```
-As you can see, routes with the same name are grouped together.
+大家可以看到，对于相同命名的路由都会归类到一起。
 
-As for routing grouping, there are actually many restrictions, because if the group(['attribute'=>'attribute value']) is named, then it is best not to declare the same attribute separately.
+关于路由分组，其实限制又有不少，因为如果命名了group(['属性'=>'属性值']),那么最好不要再去单独声明相同的属性了。
 
-In addition, if your class annotation declares `group(['prefix' => '/home'] `, then in the method annotation, declaring ` prefix('/home2' )` will not work, and the same attribute will not take effect if it is declared in a group.
+另外，如果你类注解声明了`group(['prefix' => '/home']`,那么方法注解里，在声明`prefix('/home2')`,将不会起作用，相同的属性，在分组里面声明并不会生效。
 
+### 类注解属性
 
-### Class annotation attribute
+关于类注解和方法注解的属性名称如以下所示：
 
-The attribute names of class annotations and method annotations are as follows:
+类注解的都是会自动注册到方法注解里面，也可以在方法注解里面覆盖
 
-All comments of the class will be automatically registered in the method comments, and can also be covered in the method comments.
-
-| Annotation class attribute (global attribute) | Method attribute |
+|   注解类属性(全局属性)  |  方法属性   |
 | --- | --- |
-| prefix,name,where,domain,middleware | prefix,name,where,domain,middleware,post,get,any,match,options,patch,view,redirect,put,delete |
+|  prefix,name,where,domain,middleware,group   |  prefix,name,where,domain,middleware,group,post,get,any,match,options,patch,view,redirect,put,delete    |
 
 
-## License
+>属性都要小写,并没有去判断大小写混用
+
+## LICENSE
+
 Laravel-route-notes is released under the MIT license
